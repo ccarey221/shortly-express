@@ -23,20 +23,59 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
-app.post('/signup', function(req, res, next) {
+app.post('/signup', function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
 
-  Users.create({
-    username: username,
-    password: password
-  });
-  next();
+  Users
+    .query('where', 'username', '=', username)
+    .fetch()
+    .then(function(model) {
+      if (!model.models.length) {
+        Users.create({
+          username: username,
+          password: password
+        });
+        res.render('login');
+      } else {
+        console.log('Username already taken');
+      }
+    });
 });
+
+app.post('/login', function(req, res) {
+  var givenUsername = req.body.username;
+  var givenPassword = req.body.password;
+
+  Users
+    .query('where', 'username', '=', givenUsername)
+    .fetch()
+    .then(function(model) {
+      if (!!model.models.length) {
+        var password = model.models[0].get('password');
+        if (givenPassword === password) {
+          console.log('logged in');
+          res.render('index');
+        } else {
+          console.log('wrong pass');
+          res.render('login');
+        }
+      } else {
+        console.log('couldnt find user');
+        res.render('signup');
+      }
+    });
+});
+
+app.get('/login', 
+function(req, res) {
+  res.render('login');
+});
+
 
 app.get('/', 
 function(req, res) {
-  res.render('login');
+  res.render('index');
 });
 
 app.get('/signup', 
