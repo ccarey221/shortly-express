@@ -2,7 +2,7 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
-
+var query = require('querystring');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -13,6 +13,7 @@ var Click = require('./app/models/click');
 
 var app = express();
 
+
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 app.use(partials());
@@ -22,11 +23,27 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
+app.post('/signup', function(req, res, next) {
+  var username = req.body.username;
+  var password = req.body.password;
+
+  Users.create({
+    username: username,
+    password: password
+  });
+  next();
+});
 
 app.get('/', 
 function(req, res) {
-  res.render('index');
+  res.render('login');
 });
+
+app.get('/signup', 
+function(req, res) {
+  res.render('signup');
+});
+
 
 app.get('/create', 
 function(req, res) {
