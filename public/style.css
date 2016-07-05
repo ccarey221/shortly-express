@@ -13,6 +13,7 @@ a {
 h1 {
   font-style: italic;
   margin-bottom: 10px;
+  display: inline-block;
 }
 
 .navigation {
@@ -134,4 +135,20 @@ form input[type=text], form input[type=password] {
 
 .creator .message {
   clear: both;
+}
+
+.logout {
+  float: right;
+  display: inline-block;
+  height: 50px;
+  margin-right: 5px;
+  background:  url(http://upload.wikimedia.org/wikipedia/commons/d/dd/Muybridge_race_horse_animated.gif) center center;
+  background-size: 100%;
+  color: white;
+
+}
+
+.logoutform {
+   float: right;
+   display: inline-block;
 }

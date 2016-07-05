@@ -2,7 +2,8 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
-var query = require('querystring');
+var bcrypt = require('bcrypt-nodejs');
+var session = require('client-sessions');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -23,6 +24,17 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
+app.use(session({
+  cookieName: 'session',
+  secret: 'lkafhlk34hlih3aw4fklhafk',
+  activeDuration: 5 * 60 * 1000
+}));
+
+app.get('/signup', 
+function(req, res) {
+  res.render('signup');
+});
+
 app.post('/signup', function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
@@ -39,8 +51,14 @@ app.post('/signup', function(req, res) {
         res.render('login');
       } else {
         console.log('Username already taken');
+        res.render('signup');
       }
     });
+});
+
+app.get('/login', 
+function(req, res) {
+  res.render('login');
 });
 
 app.post('/login', function(req, res) {
@@ -53,8 +71,9 @@ app.post('/login', function(req, res) {
     .then(function(model) {
       if (!!model.models.length) {
         var password = model.models[0].get('password');
-        if (givenPassword === password) {
+        if (bcrypt.compareSync(givenPassword, password)) {
           console.log('logged in');
+          req.session.user = model.models[0]; //ugly object
           res.render('index');
         } else {
           console.log('wrong pass');
@@ -67,26 +86,48 @@ app.post('/login', function(req, res) {
     });
 });
 
-app.get('/login', 
-function(req, res) {
-  res.render('login');
+app.get('/', function(req, res) {
+  if (req.session && req.session.user) {
+    Users
+      .query('where', 'username', '=', req.session.user.username)
+      .fetch()
+      .then(function(model) {
+        if (!model.models.length) {
+          console.log('authentication failed resetting to login page');
+          req.session.reset();
+          res.render('login');
+        } else {
+          res.locals.user = model.models[0];
+          console.log('authentication passed resetting to index page');
+          res.render('index');
+        }
+      });
+  } else {
+    console.log('req session or req user does not exist')
+    res.render('login');
+  }
 });
 
-
-app.get('/', 
-function(req, res) {
-  res.render('index');
-});
-
-app.get('/signup', 
-function(req, res) {
-  res.render('signup');
-});
-
-
-app.get('/create', 
-function(req, res) {
-  res.render('index');
+app.get('/create', function(req, res) {
+  if (req.session && req.session.user) {
+    Users
+      .query('where', 'username', '=', req.session.user.username)
+      .fetch()
+      .then(function(model) {
+        if (!model.models.length) {
+          console.log('authentication failed resetting to login page');
+          req.session.reset();
+          res.render('login');
+        } else {
+          res.locals.user = model.models[0];
+          console.log('authentication passed resetting to index page');
+          res.render('index');
+        }
+      });
+  } else {
+    console.log('req session or req user does not exist');
+    res.render('login');
+  }
 });
 
 app.get('/links', 
@@ -95,6 +136,16 @@ function(req, res) {
     res.status(200).send(links.models);
   });
 });
+
+app.post('/logout',
+function(req, res) {
+  console.log('logout yo')
+  req.session.destroy(function(err) {
+    console.log('err', err)
+  })
+  res.render('login');
+}
+);
 
 app.post('/links', 
 function(req, res) {

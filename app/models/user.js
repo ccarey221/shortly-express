@@ -8,9 +8,11 @@ var User = db.Model.extend({
   tableName: 'users',
   hasTimestamps: true,
   initialize: function(userObj) {
+    var hash = bcrypt.hashSync(userObj.password);
+
     this.on('creating', function(model, attrs, options) {
       model.set('username', userObj.username);
-      model.set('password', userObj.password);
+      model.set('password', hash);
     });
   }
 });
